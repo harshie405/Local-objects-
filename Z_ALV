@@ -1,0 +1,414 @@
+*&---------------------------------------------------------------------*
+*& Report YP1_ALV
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT yp1_alv.
+DATA: lv_vbeln TYPE vbeln_va.
+SELECT-OPTIONS: s_vbeln FOR lv_vbeln.
+
+TYPES: BEGIN OF lty_vbak,
+         vbeln TYPE vbeln_va,
+         erdat TYPE erdat,
+         erzet TYPE erzet,
+         ernam TYPE ernam,
+         vbtyp TYPE vbtyp,
+       END OF lty_vbak.
+TYPES: BEGIN OF lty_vbap,
+         vbeln TYPE vbeln_va,
+         posnr TYPE posnr,
+         matnr TYPE matnr,
+       END OF lty_vbap.
+
+TYPES: BEGIN OF ls_keys,
+         fieldname TYPE fieldname,
+       END OF ls_keys.
+
+DATA: lt_vbak     TYPE TABLE OF lty_vbak,
+      ls_vbak     TYPE lty_vbak,
+      lt_vbap     TYPE TABLE OF lty_vbap,
+      ls_vbap     TYPE lty_vbap,
+      lt_fieldcat TYPE slis_t_fieldcat_alv,
+      lt_final    TYPE TABLE OF ystr_1777,
+      ls_final    TYPE ystr_1777,
+      ls_keyinfo  TYPE slis_keyinfo_alv,
+      lt_keys     TYPE TABLE OF ls_keys,
+      lt_sort     TYPE slis_t_sortinfo_alv,
+      ls_sort     TYPE slis_sortinfo_alv,
+      lt_filter   TYPE slis_t_filter_alv,
+      ls_filter   TYPE slis_filter_alv.
+
+SELECT vbeln erdat erzet ernam vbtyp
+  FROM vbak
+  INTO TABLE lt_vbak
+  WHERE vbeln IN s_vbeln.
+IF sy-subrc EQ 0.
+  SELECT vbeln posnr matnr
+    FROM vbap
+    INTO TABLE lt_vbap
+    FOR ALL ENTRIES IN lt_vbak
+    WHERE vbeln = lt_vbak-vbeln.
+ENDIF.
+
+LOOP AT lt_vbak INTO ls_vbak.
+  LOOP AT lt_vbap INTO ls_vbap WHERE vbeln = ls_vbak-vbeln.
+    ls_final-vbeln = ls_vbak-vbeln.
+    ls_final-erdat = ls_vbak-erdat.
+    ls_final-erzet = ls_vbak-erzet.
+*    ls_final-ernam = ls_vbak-ernam.
+    ls_final-vbtyp = ls_vbak-vbtyp.
+    ls_final-posnr = ls_vbap-posnr.
+    ls_final-matnr = ls_vbap-matnr.
+    APPEND ls_final TO lt_final.
+  ENDLOOP.
+
+  CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
+    EXPORTING
+*     I_PROGRAM_NAME         =
+*     I_INTERNAL_TABNAME     =
+      i_structure_name       = 'YSTR_1777'
+*     I_CLIENT_NEVER_DISPLAY = 'X'
+*     I_INCLNAME             =
+*     I_BYPASSING_BUFFER     =
+*     I_BUFFER_ACTIVE        =
+    CHANGING
+      ct_fieldcat            = lt_fieldcat
+    EXCEPTIONS
+      inconsistent_interface = 1
+      program_error          = 2
+      OTHERS                 = 3.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+*  CALL FUNCTION 'REUSE_ALV_LIST_DISPLAY' " LIST DISPLAY - WE HAVE STATIC OUTPUT
+*    EXPORTING
+**     I_INTERFACE_CHECK              = ' '
+**     I_BYPASSING_BUFFER             =
+**     I_BUFFER_ACTIVE                = ' '
+**     I_CALLBACK_PROGRAM             = ' '
+**     I_CALLBACK_PF_STATUS_SET       = ' '
+**     I_CALLBACK_USER_COMMAND        = ' '
+**     I_STRUCTURE_NAME               =
+**     IS_LAYOUT   =
+*      it_fieldcat = lt_fieldcat
+**     IT_EXCLUDING                   =
+**     IT_SPECIAL_GROUPS              =
+**     IT_SORT     =
+**     IT_FILTER   =
+**     IS_SEL_HIDE =
+**     I_DEFAULT   = 'X'
+**     I_SAVE      = ' '
+**     IS_VARIANT  =
+**     IT_EVENTS   =
+**     IT_EVENT_EXIT                  =
+**     IS_PRINT    =
+**     IS_REPREP_ID                   =
+**     I_SCREEN_START_COLUMN          = 0
+**     I_SCREEN_START_LINE            = 0
+**     I_SCREEN_END_COLUMN            = 0
+**     I_SCREEN_END_LINE              = 0
+**     IR_SALV_LIST_ADAPTER           =
+**     IT_EXCEPT_QINFO                =
+**     I_SUPPRESS_EMPTY_DATA          = ABAP_FALSE
+**     IO_SALV_ADAPTER                =
+**         IMPORTING
+**     E_EXIT_CAUSED_BY_CALLER        =
+**     ES_EXIT_CAUSED_BY_USER         =
+*    TABLES
+*      t_outtab    = lt_final
+*         EXCEPTIONS
+*     PROGRAM_ERROR                  = 1
+*     OTHERS      = 2.
+*  IF sy-subrc <> 0.
+** Implement suitable error handling here
+*  ENDIF.
+
+  ls_sort-fieldname = 'VBELN'.
+  ls_sort-down = 'X'.
+  APPEND ls_sort TO lt_sort.
+
+  ls_filter-fieldname = 'VBTYP'.
+  ls_filter-tabname = 'LT_FINAL'.
+  ls_filter-sign0 = 'I'.
+  ls_filter-optio = 'BT'.
+  ls_filter-valuf_int = 'A'.
+  ls_filter-valuf_int = 'D'.
+  APPEND ls_filter TO lt_filter.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY' "GRID DISPLAY - WE HAVE FLEXIBLE OUTPUT
+    EXPORTING
+*     I_INTERFACE_CHECK                 = ' '
+*     I_BYPASSING_BUFFER                = ' '
+*     I_BUFFER_ACTIVE                   = ' '
+*     I_CALLBACK_PROGRAM                = ' '
+*     I_CALLBACK_PF_STATUS_SET          = ' '
+*     I_CALLBACK_USER_COMMAND           = ' '
+*     I_CALLBACK_TOP_OF_PAGE            = ' '
+*     I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*     I_CALLBACK_HTML_END_OF_LIST       = ' '
+*     I_STRUCTURE_NAME                  =
+*     I_BACKGROUND_ID                   = ' '
+*     I_GRID_TITLE  =
+*     I_GRID_SETTINGS                   =
+*     IS_LAYOUT     =
+      it_fieldcat   = lt_fieldcat
+*     IT_EXCLUDING  =
+*     IT_SPECIAL_GROUPS                 =
+      it_sort       = lt_sort
+      it_filter     = lt_filter
+*     IS_SEL_HIDE   =
+*     I_DEFAULT     = 'X'
+*     I_SAVE        = ' '
+*     IS_VARIANT    =
+*     IT_EVENTS     =
+*     IT_EVENT_EXIT =
+*     IS_PRINT      =
+*     IS_REPREP_ID  =
+*     I_SCREEN_START_COLUMN             = 0
+*     I_SCREEN_START_LINE               = 0
+*     I_SCREEN_END_COLUMN               = 0
+*     I_SCREEN_END_LINE                 = 0
+*     I_HTML_HEIGHT_TOP                 = 0
+*     I_HTML_HEIGHT_END                 = 0
+*     IT_ALV_GRAPHICS                   =
+*     IT_HYPERLINK  =
+*     IT_ADD_FIELDCAT                   =
+*     IT_EXCEPT_QINFO                   =
+*     IR_SALV_FULLSCREEN_ADAPTER        =
+*     O_PREVIOUS_SRAL_HANDLER           =
+*   IMPORTING
+*     E_EXIT_CAUSED_BY_CALLER           =
+*     ES_EXIT_CAUSED_BY_USER            =
+    TABLES
+      t_outtab      = lt_final
+    EXCEPTIONS
+      program_error = 1
+      OTHERS        = 2.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+*  SELECT fieldname
+*        INTO TABLE lt_keys
+*        FROM dd03l
+*        WHERE tabname = 'VBAK'
+*        ORDER BY position.
+*
+*  LOOP AT lt_fieldcat ASSIGNING FIELD-SYMBOL(<ls_fieldcat>).
+*    IF LINE_EXISTS( lt_keys[ fieldname = <ls_fieldcat>-fieldname ] ).
+*      <ls_fieldcat>-tabname = 'LT_VBAK'.
+*    ELSE.
+*      <ls_fieldcat>-tabname = 'LT_VBAP'.
+*    ENDIF.
+*  ENDLOOP.
+*
+*  ls_keyinfo-header01 = 'VBELN'.
+*  ls_keyinfo-item01 = 'VBELN'.
+*
+*  CALL FUNCTION 'REUSE_ALV_HIERSEQ_LIST_DISPLAY'
+*    EXPORTING
+**     I_INTERFACE_CHECK              = ' '
+**     I_CALLBACK_PROGRAM             =
+**     I_CALLBACK_PF_STATUS_SET       = ' '
+**     I_CALLBACK_USER_COMMAND        = ' '
+**     IS_LAYOUT        =
+*      it_fieldcat      = lt_fieldcat
+**     IT_EXCLUDING     =
+**     IT_SPECIAL_GROUPS              =
+**     IT_SORT          =
+**     IT_FILTER        =
+**     IS_SEL_HIDE      =
+**     I_SCREEN_START_COLUMN          = 0
+**     I_SCREEN_START_LINE            = 0
+**     I_SCREEN_END_COLUMN            = 0
+**     I_SCREEN_END_LINE              = 0
+**     I_DEFAULT        = 'X'
+**     I_SAVE           = ' '
+**     IS_VARIANT       =
+**     IT_EVENTS        =
+**     IT_EVENT_EXIT    =
+*      i_tabname_header = 'LT_VBAK'
+*      i_tabname_item   = 'LT_VBAP'
+**     I_STRUCTURE_NAME_HEADER        =
+**     I_STRUCTURE_NAME_ITEM          =
+*      is_keyinfo       = ls_keyinfo
+**     IS_PRINT         =
+**     IS_REPREP_ID     =
+**     I_BYPASSING_BUFFER             =
+**     I_BUFFER_ACTIVE  =
+**     IR_SALV_HIERSEQ_ADAPTER        =
+**     IT_EXCEPT_QINFO  =
+**     I_SUPPRESS_EMPTY_DATA          = ABAP_FALSE
+**     I_LIST_DISPLAY_ONLY            = ABAP_FALSE
+**   IMPORTING
+**     E_EXIT_CAUSED_BY_CALLER        =
+**     ES_EXIT_CAUSED_BY_USER         =
+*    TABLES
+*      t_outtab_header  = lt_vbak
+*      t_outtab_item    = lt_vbap
+**   EXCEPTIONS
+**     PROGRAM_ERROR    = 1
+**     OTHERS           = 2
+*    .
+*  IF sy-subrc <> 0.
+** Implement suitable error handling here
+*  ENDIF.
+
+#ALV BLOCK
+
+*&---------------------------------------------------------------------*
+*& Report YP1_ALV_BLOCK
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT yp1_alv_block.
+DATA: lv_vbeln TYPE vbeln_va.
+
+SELECT-OPTIONS: s_vbeln FOR lv_vbeln.
+
+TYPES: BEGIN OF lty_vbak,
+         vbeln TYPE vbeln_va,
+         erdat TYPE erdat,
+         erzet TYPE erzet,
+         ernam TYPE ernam,
+         vbtyp TYPE vbtyp,
+       END OF lty_vbak.
+
+TYPES: BEGIN OF lty_vbap,
+         vbeln TYPE vbeln_va,
+         posnr TYPE posnr,
+         matnr TYPE matnr,
+       END OF lty_vbap.
+
+DATA: lt_vbak           TYPE TABLE OF lty_vbak,
+      lw_vbak           TYPE lty_vbak,
+      lt_vbap           TYPE TABLE OF lty_vbap,
+      lw_vbap           TYPE lty_vbap,
+      lt_fieldcat_vbak  TYPE  slis_t_fieldcat_alv,
+      lt_fieldcat_vbap  TYPE   slis_t_fieldcat_alv,
+      lwa_fieldcat_vbak TYPE slis_fieldcat_alv,
+      lwa_fieldcat_vbap TYPE slis_fieldcat_alv,
+      lwa_layout_vbak   TYPE slis_layout_alv,
+      lt_events_vbak    TYPE slis_t_event,
+      lwa_layout_vbap   TYPE slis_layout_alv,
+      lt_events_vbap    TYPE slis_t_event.
+
+
+
+      select vbeln erdat erzet ernam vbtyp
+                   FROM vbak
+                   INTO TABLE lt_vbak
+                   WHERE vbeln IN s_vbeln.
+IF lt_vbak IS NOT INITIAL.
+  SELECT vbeln posnr matnr
+    FROM vbap
+    INTO TABLE lt_vbap
+    FOR ALL ENTRIES IN lt_vbak
+    WHERE vbeln = lt_vbak-vbeln.
+ENDIF.
+
+lwa_fieldcat_vbak-col_pos = 1.
+lwa_fieldcat_vbak-fieldname = 'VBELN'.
+lwa_fieldcat_vbak-tabname = 'LT_VBAK'.
+lwa_fieldcat_vbak-seltext_l = 'SALES DOCUMENT NUMBER'.
+APPEND  lwa_fieldcat_vbak TO  lt_fieldcat_vbak.
+
+lwa_fieldcat_vbak-col_pos = 12.
+lwa_fieldcat_vbak-fieldname = 'ERDAT'.
+lwa_fieldcat_vbak-tabname = 'LT_VBAK'.
+lwa_fieldcat_vbak-seltext_l = 'PRESENT DATE'.
+APPEND  lwa_fieldcat_vbak TO  lt_fieldcat_vbak.
+
+lwa_fieldcat_vbak-col_pos = 1.
+lwa_fieldcat_vbak-fieldname = 'ERZET'.
+lwa_fieldcat_vbak-tabname = 'LT_VBAK'.
+lwa_fieldcat_vbak-seltext_l = 'TIME'.
+APPEND  lwa_fieldcat_vbak TO  lt_fieldcat_vbak.
+
+lwa_fieldcat_vbap-col_pos = 1.
+lwa_fieldcat_vbap-fieldname = 'VBELN'.
+lwa_fieldcat_vbap-tabname = 'LT_VBAK'.
+lwa_fieldcat_vbap-seltext_l = 'SALES DOCUMENT NUMBER'.
+APPEND  lwa_fieldcat_vbap TO  lt_fieldcat_vbap.
+
+lwa_fieldcat_vbap-col_pos = 1.
+lwa_fieldcat_vbap-fieldname = 'POSNR'.
+lwa_fieldcat_vbap-tabname = 'LT_VBAKP'.
+lwa_fieldcat_vbap-seltext_l = 'ITEM NUMBER'.
+APPEND  lwa_fieldcat_vbap TO  lt_fieldcat_vbap.
+
+
+lwa_fieldcat_vbap-col_pos = 1.
+lwa_fieldcat_vbap-fieldname = 'MATNR'.
+lwa_fieldcat_vbap-tabname = 'LT_VBAP'.
+lwa_fieldcat_vbap-seltext_l = 'MATERIAL NUMBER'.
+APPEND  lwa_fieldcat_vbap TO  lt_fieldcat_vbap.
+
+CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_INIT'
+  EXPORTING
+    i_callback_program = sy-repid
+*   I_CALLBACK_PF_STATUS_SET       = ' '
+*   I_CALLBACK_USER_COMMAND        = ' '
+*   IT_EXCLUDING       =
+  .
+
+CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND'
+  EXPORTING
+    is_layout   = lwa_layout_vbak
+    it_fieldcat = lt_fieldcat_vbak
+    i_tabname   = 'LT_VBAK'
+    it_events   = lt_events_vbak
+*   IT_SORT     =
+*   I_TEXT      = ' '
+  TABLES
+    t_outtab    = lt_vbak
+*      EXCEPTIONS
+*   PROGRAM_ERROR                    = 1
+*   MAXIMUM_OF_APPENDS_REACHED       = 2
+*   OTHERS      = 3
+  .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND'
+  EXPORTING
+    is_layout   = lwa_layout_vbap
+    it_fieldcat = lt_fieldcat_vbap
+    i_tabname   = 'LT_VBAP'
+    it_events   = lt_events_vbap
+*   IT_SORT     =
+*   I_TEXT      = ' '
+  TABLES
+    t_outtab    = lt_vbap
+*      EXCEPTIONS
+*   PROGRAM_ERROR                    = 1
+*   MAXIMUM_OF_APPENDS_REACHED       = 2
+*   OTHERS      = 3
+  .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+
+CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_DISPLAY'
+* EXPORTING
+*   I_INTERFACE_CHECK             = ' '
+*   IS_PRINT                      =
+*   I_SCREEN_START_COLUMN         = 0
+*   I_SCREEN_START_LINE           = 0
+*   I_SCREEN_END_COLUMN           = 0
+*   I_SCREEN_END_LINE             = 0
+* IMPORTING
+*   E_EXIT_CAUSED_BY_CALLER       =
+*   ES_EXIT_CAUSED_BY_USER        =
+* EXCEPTIONS
+*   PROGRAM_ERROR                 = 1
+*   OTHERS                        = 2
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+
+ENDLOOP.
