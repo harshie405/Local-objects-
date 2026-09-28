@@ -1,0 +1,154 @@
+*&---------------------------------------------------------------------*
+*& Report YVA_ACC_INT_ALV
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT YVA_ACC_INT_ALV.
+
+DATA: IT_BKPF TYPE STANDARD TABLE OF YVA_AHEAD,
+IT_BSEG TYPE STANDARD TABLE OF YVA_ITEMM,
+
+WA_BKPF TYPE YVA_AHEAD,
+WA_BSEG TYPE YVA_ITEMM,
+
+V_STR TYPE DD02L-TABNAME.
+
+SELECT-OPTIONS: S_BELNR FOR WA_BKPF-BELNR.
+
+SELECT MANDT
+       BUKRS
+       BELNR
+       GJAHR
+       BLART FROM bkpf
+  INTO TABLE IT_BKPF up to 100 rows
+  WHERE BELNR IN S_BELNR.
+
+  V_STR = 'YVA_AHEAD'.
+
+ CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+  EXPORTING
+*    I_INTERFACE_CHECK                 = ' '
+*    I_BYPASSING_BUFFER                = ' '
+*    I_BUFFER_ACTIVE                   = ' '
+    I_CALLBACK_PROGRAM                = SY-CPROG
+*    I_CALLBACK_PF_STATUS_SET          = ' '
+    I_CALLBACK_USER_COMMAND           = 'HARSHITHA'
+*    I_CALLBACK_TOP_OF_PAGE            = ' '
+*    I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*    I_CALLBACK_HTML_END_OF_LIST       = ' '
+    I_STRUCTURE_NAME                  =  V_STR
+*    I_BACKGROUND_ID                   = ' '
+*    I_GRID_TITLE                      =
+*    I_GRID_SETTINGS                   =
+*    IS_LAYOUT                         =
+*    IT_FIELDCAT                       =
+*    IT_EXCLUDING                      =
+*    IT_SPECIAL_GROUPS                 =
+*    IT_SORT                           =
+*    IT_FILTER                         =
+*    IS_SEL_HIDE                       =
+*    I_DEFAULT                         = 'X'
+*    I_SAVE                            = ' '
+*    IS_VARIANT                        =
+*    IT_EVENTS                         =
+*    IT_EVENT_EXIT                     =
+*    IS_PRINT                          =
+*    IS_REPREP_ID                      =
+*    I_SCREEN_START_COLUMN             = 0
+*    I_SCREEN_START_LINE               = 0
+*    I_SCREEN_END_COLUMN               = 0
+*    I_SCREEN_END_LINE                 = 0
+*    I_HTML_HEIGHT_TOP                 = 0
+*    I_HTML_HEIGHT_END                 = 0
+*    IT_ALV_GRAPHICS                   =
+*    IT_HYPERLINK                      =
+*    IT_ADD_FIELDCAT                   =
+*    IT_EXCEPT_QINFO                   =
+*    IR_SALV_FULLSCREEN_ADAPTER        =
+*    O_PREVIOUS_SRAL_HANDLER           =
+*  IMPORTING
+*    E_EXIT_CAUSED_BY_CALLER           =
+*    ES_EXIT_CAUSED_BY_USER            =
+   TABLES
+     t_outtab                          = IT_BKPF
+*  EXCEPTIONS
+*    PROGRAM_ERROR                     = 1
+*    OTHERS                            = 2
+           .
+ IF sy-subrc <> 0.
+* Implement suitable error handling here
+ ENDIF.
+
+ FORM HARSHITHA USING C LIKE SY-UCOMM
+                      D TYPE SLIS_SELFIELD.
+*   READ TABLE IT_BKPF INTO WA_BKPF INDEX D-TABINDEX.
+
+   data(ls_bkpf) = it_bkpf[ D-TABINDEX ].
+
+   SELECT MANDT
+          BUKRS
+          BELNR
+          GJAHR
+          BUZEI
+          BUZID
+          AUGDT
+          AUGCP
+          AUGBL FROM BSEG
+     INTO TABLE IT_BSEG
+     WHERE BELNR = ls_BKPF-BELNR.
+
+     CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+      EXPORTING
+*        I_INTERFACE_CHECK                 = ' '
+*        I_BYPASSING_BUFFER                = ' '
+*        I_BUFFER_ACTIVE                   = ' '
+*        I_CALLBACK_PROGRAM                = ' '
+*        I_CALLBACK_PF_STATUS_SET          = ' '
+*        I_CALLBACK_USER_COMMAND           = ' '
+*        I_CALLBACK_TOP_OF_PAGE            = ' '
+*        I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*        I_CALLBACK_HTML_END_OF_LIST       = ' '
+        I_STRUCTURE_NAME                  = 'YVA_ITEMM'
+*        I_BACKGROUND_ID                   = ' '
+*        I_GRID_TITLE                      =
+*        I_GRID_SETTINGS                   =
+*        IS_LAYOUT                         =
+*        IT_FIELDCAT                       =
+*        IT_EXCLUDING                      =
+*        IT_SPECIAL_GROUPS                 =
+*        IT_SORT                           =
+*        IT_FILTER                         =
+*        IS_SEL_HIDE                       =
+*        I_DEFAULT                         = 'X'
+*        I_SAVE                            = ' '
+*        IS_VARIANT                        =
+*        IT_EVENTS                         =
+*        IT_EVENT_EXIT                     =
+*        IS_PRINT                          =
+*        IS_REPREP_ID                      =
+*        I_SCREEN_START_COLUMN             = 0
+*        I_SCREEN_START_LINE               = 0
+*        I_SCREEN_END_COLUMN               = 0
+*        I_SCREEN_END_LINE                 = 0
+*        I_HTML_HEIGHT_TOP                 = 0
+*        I_HTML_HEIGHT_END                 = 0
+*        IT_ALV_GRAPHICS                   =
+*        IT_HYPERLINK                      =
+*        IT_ADD_FIELDCAT                   =
+*        IT_EXCEPT_QINFO                   =
+*        IR_SALV_FULLSCREEN_ADAPTER        =
+*        O_PREVIOUS_SRAL_HANDLER           =
+*      IMPORTING
+*        E_EXIT_CAUSED_BY_CALLER           =
+*        ES_EXIT_CAUSED_BY_USER            =
+       TABLES
+         t_outtab                          = IT_BSEG
+*      EXCEPTIONS
+*        PROGRAM_ERROR                     = 1
+*        OTHERS                            = 2
+               .
+     IF sy-subrc <> 0.
+* Implement suitable error handling here
+     ENDIF.
+
+   ENDFORM.
