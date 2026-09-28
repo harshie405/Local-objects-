@@ -1,0 +1,83 @@
+*&---------------------------------------------------------------------*
+*& Report YPR1_CLASSICAL
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ypr1_classical.
+"EX 1
+*DATA: lv_output TYPE numc3.
+*
+*PARAMETERS: p_input TYPE numc2.
+*PARAMETERS: p_input1 TYPE numc2.
+*
+*lv_output = p_input + p_input1.
+*WRITE: lv_output.
+
+"EX 2
+*TYPES: BEGIN OF lty_data,
+*         order_number TYPE ydedno_12,
+*         pm           TYPE ypm_12,
+*         ta           TYPE yta_12,
+*       END OF lty_data.
+*
+*DATA: lt_data TYPE STANDARD TABLE OF lty_data,
+*      lv_ono  TYPE ydedno_12.
+
+
+*PARAMETERS: p_ono TYPE ydedno_12.
+*SELECT-OPTIONS: s_ono FOR lv_ono.
+*
+*SELECT order_number pm ta
+*  FROM yordh
+*  INTO TABLE lt_data
+*  WHERE order_number IN s_ono.
+*
+*LOOP AT lt_data ASSIGNING FIELD-SYMBOL(<lfs_data>).
+*  WRITE: / <lfs_data>-order_number, <lfs_data>-pm, <lfs_data>-ta.
+*ENDLOOP.
+
+"EX3
+TYPES: BEGIN OF lty_data,
+         order_number      TYPE ydedno_12,
+         order_item_number TYPE yitem_12,
+         pm                TYPE ypm_12,
+         ta                TYPE yta_12,
+         item_cost         TYPE yitem_cos,
+       END OF lty_data.
+
+DATA: lv_ono  TYPE ydedno_12,
+      lt_data TYPE STANDARD TABLE OF lty_data.
+
+SELECT-OPTIONS: s_ono FOR lv_ono.
+
+SELECT order_number order_item_number  pm ta
+  FROM yordh
+  INTO TABLE lt_data
+  WHERE order_number IN s_ono.
+
+
+
+*SELECT a~vbeln,a~rplnr, a~audat , a~netwr, b~posnr, b~wavwr
+*  FROM vbak AS a
+*  INNER JOIN vbap AS b
+*  ON a~vbeln = b~vbeln
+*  INTO TABLE @DATA(lt_data)
+*  WHERE a~vbeln IN @s_ono.
+
+*  SELECT a~vbeln,a~rplnr, a~audat , a~netwr, b~posnr, b~wavwr
+*  FROM vbak AS a
+*  LEFT OUTER JOIN vbap AS b
+*  ON a~vbeln = b~vbeln
+*  INTO TABLE @DATA(lt_data)
+*  WHERE a~vbeln = @p_ono.
+
+*    WRITE: 'Order Number', 15 'ORDER DATE' , 27 'PAYMENT MODE' , 41 'CURRENCY', 51 'ORDER ITEM NO', 66 'ITEM COST'.
+
+  IF SY-SUBRC EQ 0.
+    LOOP AT lt_data ASSIGNING FIELD-SYMBOL(<LFS_DATA>).
+    WRITE: /  <LFS_DATA>-order_number , <LFS_DATA>-order_item_number  , <LFS_DATA>-pm, <LFS_DATA>-ta, <LFS_DATA>-item_cost.
+
+      ENDLOOP.
+      MESSAGE  S000(ymsg1).
+       MESSAGE  S000(ymsg1) WITH s_ono.
+    ENDIF.
