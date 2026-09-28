@@ -1,0 +1,120 @@
+*&---------------------------------------------------------------------*"Classical Report
+*& Report YTES_H
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ytes_classical_rep_events NO STANDARD PAGE HEADING LINE-COUNT 30(4).
+
+TYPES: BEGIN OF s_vbak,
+         vbeln TYPE vbeln,
+         vkorg TYPE vkorg,
+       END OF s_vbak.
+
+DATA: gv_vkorg TYPE vkorg,
+      lt_value TYPE STANDARD TABLE OF s_vbak.
+
+SELECT-OPTIONS: s_vkorg FOR gv_vkorg.  "the same field is used for bot internal table and structure
+PARAMETERS: s_vbeln TYPE vbeln. "only structure
+
+PARAMETERS: p_ch1 AS CHECKBOX. "Checkbox
+PARAMETERS: p_ch2 AS CHECKBOX.
+
+PARAMETERS: p_rb1 RADIOBUTTON GROUP rb USER-COMMAND ucomm,
+            p_rb2 RADIOBUTTON GROUP rb.
+PARAMETERS: p_vbeln TYPE vbeln_va MODIF ID rb1,
+            p_ebeln TYPE ekko-ebeln MODIF ID rb2.
+
+AT SELECTION-SCREEN OUTPUT.
+
+  CASE abap_true.
+    WHEN p_rb1.
+      LOOP AT SCREEN.
+        IF screen-group1 = 'RB2'.
+          screen-input = 0.
+          MODIFY SCREEN.
+        ENDIF.
+      ENDLOOP.
+    WHEN p_rb2.
+      LOOP AT SCREEN.
+        IF screen-group1 = 'RB1'.
+          screen-input = 0.
+          MODIFY SCREEN.
+        ENDIF.
+      ENDLOOP.
+  ENDCASE.
+
+  "Condition statement
+  WRITE:/ COND #( WHEN ( p_ch1 IS NOT INITIAL AND p_ch2 IS NOT INITIAL ) OR ( p_ch1 IS INITIAL AND p_ch2 IS NOT INITIAL ) THEN 'Hello'
+               WHEN  p_ch1 IS NOT INITIAL THEN 'Hi'
+               WHEN p_ch2 IS NOT INITIAL THEN 'hey' ).
+
+
+INITIALIZATION."EVENT 1(Start of evets breakpoints will trigger)
+*To close any event we need to call the next event
+
+  s_vkorg[] = VALUE #( ( sign = 'I'
+                     option = 'BT'
+                     low = '10'
+                     high = '100' )
+                     ( sign = 'E'
+                       option = 'BT'
+                       low = '20'
+                       high = '90' ) ).
+
+START-OF-SELECTION. "Mandatory event
+
+  SELECT vbeln,vkorg
+    FROM vbak
+    INTO TABLE @lt_value UP TO 30 ROWS
+    WHERE vkorg = 'US01'
+    AND vtweg = 'TR'
+    AND spart = '01'.
+
+  LOOP AT lt_value INTO DATA(ls_value).
+    WRITE:/ ls_value-vbeln,ls_value-vkorg.
+  ENDLOOP.
+
+TOP-OF-PAGE.
+  WRITE:/ sy-uline.
+  WRITE:/ 'HARSHITHA AMIREDDY'.
+  WRITE:/ 'SY-DATUM'.
+
+END-OF-PAGE.
+  WRITE:/ sy-uline.
+  WRITE:/ sy-uline.
+  WRITE:/ sy-uline.
+  WRITE: 'Thanks'.
+
+
+AT LINE-SELECTION.
+
+  DATA: lv_field TYPE string,
+        lv_value TYPE string.
+
+  GET CURSOR FIELD lv_field VALUE lv_value.
+
+
+
+  CASE lv_field.
+    WHEN 'LS_VALUE-VBELN'.
+      DATA(lv_vbeln) = CONV vbeln( lv_value ).
+      SELECT * FROM vbak INTO TABLE @DATA(lt_vbak) UP TO 20 ROWS
+        WHERE vbeln = @lv_vbeln.
+      WRITE:/ 'SALES ORDER DETAILS'.
+      LOOP AT lt_vbak ASSIGNING FIELD-SYMBOL(<ls_vbak>).
+        WRITE:/ <ls_vbak>-vbeln.
+      ENDLOOP.
+    WHEN 'LS_VALUE-VKORG'.
+      DATA(lv_vkorg) = CONV vkorg( lv_value ).
+      SELECT * FROM vbak INTO TABLE @lt_vbak UP TO 20 ROWS
+        WHERE vkorg = @lv_vkorg.
+      WRITE:/ 'ORG DETAILS'.
+      LOOP AT lt_vbak ASSIGNING <ls_vbak>.
+        WRITE:/ <ls_vbak>-vkorg.
+      ENDLOOP.
+  ENDCASE.
+
+TOP-OF-PAGE DURING LINE-SELECTION.
+  WRITE:/ sy-uline.
+  WRITE:/ 'secondary report', sy-lsind.
+  WRITE:/ sy-uline.
